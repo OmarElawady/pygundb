@@ -1,3 +1,6 @@
-Flask_Sockets==0.2.1
-Flask==0.12.2
-redis==2.10.6
+redis==3.2.1
+Flask==1.0.2
+websockets==6.0
+setuptools==39.0.1
+flask_sockets==0.2.1
+gevent_websocket==0.10.1
