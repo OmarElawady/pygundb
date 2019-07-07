@@ -11,7 +11,7 @@ except ImportError as e:
 else:
         
     SCHEME_UID_PAT = "(?P<schema>.+?)://(?P<id>.+)"
-    bcdb = j.data.bcdb.new(name="test")
+    bcdb = j.data.bcdb.new(name="test3")
 
     j.data.schema.add_from_text("""
 @url = proj.todo
@@ -30,7 +30,7 @@ todos* = (LO) !proj.todo
 @url = proj.simple
 attr1* = "" (S)
 attr2* = 0 (I)
-chars* = (LS) 
+mychars* = (LS) 
     """)
 
 
@@ -51,35 +51,48 @@ chars* = (LS)
     class BCDB:
         def __init__(self):
             self.db = {}
-            # self.m = Memory()
         
         def put(self, soul, key, value, state, graph):
             print("put bcdb => soul {} key {} value {} state {}".format(soul, key, value, state))
+            graph[soul][key] = value
             try:
                 schema, obj_id = parse_schema_and_id(soul)
             except Exception as e:
                 print("e => ", e)
-                resolved_soul = None
+                objattr = None
                 root_soul = None
-                import ipdb; ipdb.set_trace()
-                for k, rootnode in graph.items():
+                theattrval = graph[soul][key]
+                resolved_soul = None
+
+                # now let's figure out the path to set the attrval to.
+                found = False
+                for kroot, rootnode in graph.items():
+                    if found:
+                        break
+                    # print(">>>>>>>>>>> kroot: ", kroot)
                     for attrname, attrval in rootnode.items():
-                        if attrval["#"] == k:
-                            resolved_soul = attrval["#"] ## FIXME urgently
-                            root_soul = k
+                        if not isinstance(attrval, dict):
+                            continue
+                        # print("kroot {} attrname {} attrval {}".format(kroot, attrname, attrval))
+                        if attrval["#"] == soul and soul != kroot:
+                            objattr = attrname  # list/mychars
+                            root_soul = kroot
+                            resolved_soul = soul
+                            found = True
                             break
-                if resolved_soul and root_soul:
+        
+                if (resolved_soul == soul) and root_soul:
                     schema, obj_id = parse_schema_and_id(root_soul)
                     model = get_model_by_schema_url(schema)
                     obj = model.get(obj_id)
-                    if resolved_soul.startswith("list/"):
-                        attrname_in_model = resolved_soul.strip("list/")
-                        thelist = getattr(obj, attrname_in_model)
-                        thelist.append(value)
-                        setattr(obj, attrname_in_model, thelist)
+                    if objattr.startswith("list/"):
+                        theattrname = objattr.lstrip("list/")
+                        thelist = getattr(obj, theattrname )
+                        thelist.append(theattrval)
+                        setattr(obj, theattrname, thelist)
                     else:
-                        setattr(obj, attrname_in_model, value)
-                    
+                        setattr(obj, objattr, theattrval)
+                    obj.save()
             else:
 
                 model = get_model_by_schema_url(schema)
@@ -101,8 +114,6 @@ chars* = (LS)
 
 
         def get(self, soul, key=None):
-            # resm = self.m.get(soul, key)
-            # print(resm)
             print(" get bcdb => soul {} key {} ".format(soul, key))
 
             ret = {SOUL: soul, METADATA:{SOUL:soul, STATE:{}}}
