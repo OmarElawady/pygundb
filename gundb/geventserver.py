@@ -21,30 +21,32 @@ class App:
         self.backend = backend
 
 
-app = App(DummyKV())
+app = App(BCDB())
 
 def trackid(id_):
     if id_ not in trackedids:
-        print("CREATING NEW ID:::", id_)
+        # print("CREATING NEW ID:::", id_)
         trackedids.append(id_)
     return id_
 
 def emit(data):
     resp = json.dumps(data)
     for p in peers:
-        print("Sending resp: ", resp, " to ", p)
+        # print("Sending resp: ", resp, " to ", p)
         p.send(resp)
 
 def loggraph(graph):
     global app
-    for soul, node in graph.items():
-        print("\nSoul: ", soul)
-        print("\n\t\tNode: ", node)
-        for k, v in node.items():
-            print("\n\t\t{} => {}".format(k, v))
-    
-    print("TRACKED: ", trackedids, " #", len(trackedids))
-    print("\n\nBACKEND: ", app.backend.list())
+    # print("\n\n*************************")
+    # print(json.dumps(graph, indent=4, sort_keys=True))
+    # for soul, node in graph.items():
+    #     print("\nSoul: ", soul)
+    #     print("\n\t\tNode: ", node)
+    #     for k, v in node.items():
+    #         print("\n\t\t{} => {}".format(k, v))
+    # print("\n\n")
+    # print("TRACKED: ", trackedids, " #", len(trackedids))
+    # print("\n\nBACKEND: ", app.backend.list())
 
 
 
@@ -69,7 +71,7 @@ class GeventGunServer(WebSocketApplication):
                     uid = trackid(str(uuid.uuid4()))
                     loggraph(graph)
                     resp = {'@':soul, '#':uid, 'ok':True}
-                    print("DIFF:", diff)
+                    # print("\n\nDIFF: {}\n\n".format(diff))
                     for soul, node in diff.items():
                         for k, v in node.items():
                             if k == "_":
@@ -87,16 +89,21 @@ class GeventGunServer(WebSocketApplication):
 
                 self.sendall(resp)
                 self.sendall(msg)
-
-        self.ws.send(message)
+        try:
+            self.ws.send(message)
+        except Exception as e: 
+            print("e on message: ", e)
 
     def on_close(self, reason):
         print(reason)
 
     def sendall(self, resp):
         for client in self.ws.handler.server.clients.values():
-            client.ws.send(json.dumps(resp))
-
+            try:
+                client.ws.send(json.dumps(resp))
+            except:
+                pass
+            
 geventserverapp = WebSocketServer(
     ('', 8000),
     Resource(OrderedDict([('/', GeventGunServer)]))

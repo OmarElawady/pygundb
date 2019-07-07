@@ -1,6 +1,8 @@
 import time
 import uuid
 from .consts import STATE, METADATA, SOUL
+import json
+
 
 def newuid():
     return str(uuid.uuid4())
@@ -67,6 +69,14 @@ def HAM(machine_state, incoming_state, current_state, incoming_value, current_va
 
 # applying updates "change" to the graph
 def ham_mix(change, graph):
+    print("==============Starting Ham=========")
+    print("change:")
+    print(json.dumps(change, indent=4, sort_keys=True))
+    print("graph:")
+    print(json.dumps(graph, indent=4, sort_keys=True))
+    print("===============DONE HAM INITIAL STATE     =========")
+
+
     machine = int(time.time()*1000)  # because the value coming from client +new Date() 
     diff = {}
     for soul, node in change.items():
@@ -86,14 +96,19 @@ def ham_mix(change, graph):
                 diff[soul] = new_node(soul)
 
             graph[soul] = graph.get(soul, new_node(soul))
-            print("GRAPH[SOUL]: ", graph[soul], graph, type(graph), type(graph[soul]))
             graph[soul][key], diff[soul][key] = val, val
             graph[soul] = ensure_state(graph[soul])
             diff[soul] = ensure_state(diff[soul])
 
             graph[soul][METADATA][STATE][key] = state
             diff[soul][METADATA][STATE][key] = state
-
+    
+    print("==============Ham Report=========")
+    print("diff:")
+    print(json.dumps(diff, indent=4, sort_keys=True))
+    print("graph:")
+    print(json.dumps(graph, indent=4, sort_keys=True))
+    print("===============DONE HAM =========")
     return diff
 
 def lex_from_graph(lex, graph):
