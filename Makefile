@@ -1,5 +1,5 @@
 run: 
-	gunicorn -k flask_sockets.worker app:app
+	gunicorn -k flask_sockets.worker app:app -b 0.0.0.0:8000
 
 rungevent:
 	python3 geventapp.py

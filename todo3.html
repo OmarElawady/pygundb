@@ -8,8 +8,21 @@
 
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script>
     <script>
-      var todos = Gun("ws://172.17.0.2:8000/gun").get('todos1')
+      var todos = Gun("ws://172.17.0.2:8000/gun").get('todolistapp')
+      var gun = Gun("ws://172.17.0.2:8000/gun")
+
+      gun.get("proj.simple://1").put({"attr1":"val"})
+      gun.get("proj.simple://2").put({"attr2":5})
+      gun.get("proj.simple://2").put({"attr2":"zc"}) // should fail.
+      gun.get("proj.simple://2").get("list/mychars").set("a")
+      gun.get("proj.simple://2").get("list/mychars").set("b")
+      gun.get("proj.simple://2").get("list/mychars").set("c")
+
+      console.log("here now..")
+
+
 
       $('form').on('submit', function (event) {
         var input = $('form').find('input')
@@ -40,12 +53,12 @@
 
       function keypressTitle (element) {
         if (event.keyCode === 13) {
-          todos.get($(element).parent().parent().attr('id')).put({title: $(element).val()})
+          todos.get("proj.todo://"+$(element).parent().parent().attr('id')).put({title: $(element).val()})
         }
       }
 
       function clickCheck (element) {
-        todos.get($(element).parent().attr('id')).put({done: $(element).prop('checked')})
+        todos.get("proj.todo://"+$(element).parent().attr('id')).put({done: $(element).prop('checked')})
       }
 
 // Insert here also

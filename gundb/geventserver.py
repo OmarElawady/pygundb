@@ -56,6 +56,7 @@ class GeventGunServer(WebSocketApplication):
         print("Got client connection")
 
     def on_message(self, message):
+        print("MESSAGE: ", message)
         resp = {'ok':True}
         if message is not None:
             msg = json.loads(message)

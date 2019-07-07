@@ -9,11 +9,13 @@
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script>
-      var todolist = Gun("ws://172.17.0.2:8000/gun").get('proj.todolist/1')
+      var todolist = Gun("ws://172.17.0.2:8000/gun").get('proj.todolist/3')
       
       let todoItemsFromTodoList = (thelist) => {
           let res = []
-          res = parseJson(thelist.get("todos"))
+          thelist.get("todos").map((val, k) => {
+              res.push(JSON.parse(val))
+          })
           console.log("RES: " + res)
           return res
       }
@@ -21,12 +23,14 @@
       $('form').on('submit', function (event) {
         var input = $('form').find('input')
         let oldTodos = todoItemsFromTodoList(todolist)
-        todolist.put({todos: stringify([...oldTodos, input.val()])})
+        todolist.put({todos: JSON.stringify([...oldTodos, {"title":input.val()}])})
         input.val('')
         event.preventDefault()
       })
 
-      todolist.map().on(function (todo, id) {
+      todolist.map().on( function (todos) {
+        console.log(todo)
+        console.log(`id : >${id}<`)
         var li = $('#' + id)
         if (!li.get(0)) {
           li = $('<li>').attr('id', id).appendTo('ul')
@@ -51,14 +55,14 @@
             todos = todoItemsFromTodoList(todolist)
             todos[$(element).parent().parent().attr('id')].title = $(element).val()
 
-            todolist.put({todos:stringify(todos)})
+            todolist.put({todos:JSON.stringify(todos)})
         }
       }
 
       function clickCheck (element) {
         todos = todoItemsFromTodoList(todolist)
         todos[$(element).parent().attr('id')].done = $(element).prop('checked')
-        todolist.put({todos: todos})
+        todolist.put({todos: JSON.stringify(todos)})
       }
 
 // Insert here also
