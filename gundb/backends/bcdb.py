@@ -11,7 +11,7 @@ except ImportError as e:
 else:
         
     SCHEME_UID_PAT = "(?P<schema>.+?)://(?P<id>.+)"
-    bcdb = j.data.bcdb.new(name="test3")
+    bcdb = j.data.bcdb.new(name="test4")
 
     j.data.schema.add_from_text("""
 @url = proj.todo
@@ -45,9 +45,7 @@ mychars* = (LS)
         m = re.match(SCHEME_UID_PAT, s)
         if m:
             return m.groupdict()['schema'], m.groupdict()['id'] 
-        else:
-            return None
-
+        raise ValueError("invalid schema/object path => {}".format(s))
     class BCDB:
         def __init__(self):
             self.db = {}
