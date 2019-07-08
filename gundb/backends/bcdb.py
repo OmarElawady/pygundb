@@ -11,8 +11,8 @@ except ImportError as e:
 else:
         
     SCHEME_UID_PAT = "(?P<schema>.+?)://(?P<id>.+)"
-    bcdb = j.data.bcdb.new(name="test4")
-
+    bcdb = j.data.bcdb.get(name="test4")
+    bcdb.reset()
     j.data.schema.add_from_text("""
 @url = proj.todo
 title* = "" (S)
@@ -33,6 +33,18 @@ attr2* = 0 (I)
 mychars* = (LS) 
     """)
 
+    j.data.schema.add_from_text("""
+@url = proj.email
+addr* = "" (S)
+    """)
+    j.data.schema.add_from_text("""
+@url = proj.person
+name* = "" (S)
+email* = "" !proj.email
+    """)
+
+
+
 
     def get_schema_by_url(url):
         schema = j.data.schema.get_from_url_latest(url=url)
@@ -44,70 +56,147 @@ mychars* = (LS)
     def parse_schema_and_id(s):
         m = re.match(SCHEME_UID_PAT, s)
         if m:
-            return m.groupdict()['schema'], m.groupdict()['id'] 
-        raise ValueError("invalid schema/object path => {}".format(s))
+            return m.groupdict()['schema'], int(m.groupdict()['id']) 
+        return None, None
     class BCDB:
         def __init__(self):
             self.db = {}
         
         def put(self, soul, key, value, state, graph):
             print("put bcdb => soul {} key {} value {} state {}".format(soul, key, value, state))
-            graph[soul][key] = value
-            try:
-                schema, obj_id = parse_schema_and_id(soul)
-            except Exception as e:
-                print("e => ", e)
-                objattr = None
-                root_soul = None
-                theattrval = graph[soul][key]
-                resolved_soul = None
 
-                # now let's figure out the path to set the attrval to.
-                found = False
+            def is_root_soul(s):
+                return "://" in s
+
+            def is_nested(s):
+                return not is_root_soul(s)
+
+            def get_nested_soul_node(s, graph):
+                return graph.get(s, {})
+
+            def resolve_key(k, graph):
+                pass
+
+            def filter_root_objects(graph):
                 for kroot, rootnode in graph.items():
-                    if found:
-                        break
-                    # print(">>>>>>>>>>> kroot: ", kroot)
-                    for attrname, attrval in rootnode.items():
-                        if not isinstance(attrval, dict):
+                    if "://" in kroot:
+                        yield kroot, rootnode
+
+            ignore = ["_", "#", ">"]
+
+            def resolve_v(v, graph):
+                if not isinstance(v, dict):
+                    return v
+                if not v["#"]:
+                    return v
+                else:
+                    ret = {}
+                    soul_id = v["#"]
+                    for subk,subv in graph[soul_id].items():
+                        if subk in ignore:
                             continue
-                        # print("kroot {} attrname {} attrval {}".format(kroot, attrname, attrval))
-                        if attrval["#"] == soul and soul != kroot:
-                            objattr = attrname  # list/mychars
-                            root_soul = kroot
-                            resolved_soul = soul
-                            found = True
-                            break
-        
-                if (resolved_soul == soul) and root_soul:
-                    schema, obj_id = parse_schema_and_id(root_soul)
+                        res_v = resolve_v(subv, graph)
+                        ret[subk] = res_v
+                return ret
+                    
+            def search(k, graph):
+                # DON'T CHANGE: CHECK WITH ME OR ANDREW
+                visited = []
+                roots = list(rootobjects)
+
+                def inner(k, current_key, current_node, graph, path=None):
+                    print("path in inner: ", path)
+                
+                    if not isinstance(current_node, dict):
+                        return []   
+                    if not path:
+                        path = []
+                
+                    if current_key:
+                        path.append(current_key)
+
+                    for key, node in current_node.items():
+                        
+                        print("node: {} ".format(node))
+                        print("key {}".format(key))
+                        if key in ">_":
+                            continue
+
+                        if isinstance(node, dict) and node.get("#") == k:
+                            path.append(key)
+                            return path
+                        
+                        res = inner(k, key, node, graph, path)
+                        
+                        if res:
+                            return res
+                        else:
+                            print("path now : ", path)
+                            
+                    if current_key:
+                        path.pop()
+                    return []
+                    
+                return inner(k, None, graph, roots, None)
+
+            rootobjects = list(filter_root_objects(graph))
+            # find its parent to get
+            def do(soul, key, value, graph):
+                if is_root_soul(soul):
+                    schema, obj_id = parse_schema_and_id(soul)
+                    print("soul <- {} schema <- {} ".format(soul, schema))
                     model = get_model_by_schema_url(schema)
-                    obj = model.get(obj_id)
-                    if objattr.startswith("list/"):
-                        theattrname = objattr.lstrip("list/")
-                        thelist = getattr(obj, theattrname )
-                        thelist.append(theattrval)
-                        setattr(obj, theattrname, thelist)
-                    else:
-                        setattr(obj, objattr, theattrval)
+                    try:
+                        obj = model.get(obj_id)
+                    except:
+                        obj = model.new()
+                    print(":::=> object update setting attr {} with value {}".format(key, value))
+                    setattr(obj, key, resolve_v(value, graph))
+                    return obj
+                else:
+                    objpath = path = search(soul, graph)
+                    if not objpath:
+                        print("[---]can't find :", soul, key, value) 
+                        return
+                    objcontent = path + [{"#":soul}, graph]
+
+                    schema, obj_id = parse_schema_and_id(objpath[0])
+                    model = get_model_by_schema_url(schema)
+                    
+
+                    objdata = do(*objcontent)
+
+                    print(objpath)
+
+                    objinfo = objpath[0]
+                    objpath = objpath[1:]
+
+                    obj = None
+                    try:
+                        obj = model.get(obj_id)
+                    except:
+                        obj = model.new()
+
+                    attr = None
+                    while objpath:
+                        attr = objpath.pop(0)
+                        obj = getattr(obj, attr)
+                    
+                    obj = objdata
                     obj.save()
-            else:
+                    print("success.....!!!!!", obj)
 
-                model = get_model_by_schema_url(schema)
-                obj = None
-                try:
-                    obj = model.get(obj_id)
-                except:
-                    obj = model.new()
-                print(":::=> object update setting attr {} with value {}".format(key, value))
-                setattr(model, key, value)
-                obj.save()
 
-                ## BUG: need to think about how are we gonna represent the state for conflict resoultion (they need to be encoded somehow)
-                if soul not in self.db:
-                    self.db[soul] = {METADATA:{}}
-                self.db[soul][key] = value
-                self.db[soul][METADATA][key] = state
+            do(soul, key, value, graph)
+    
+            graph[soul][key] = value
+            print(graph)
+
+            ## BUG: need to think about how are we gonna represent the state for conflict resoultion (they need to be encoded somehow)
+            if soul not in self.db:
+                self.db[soul] = {METADATA:{}}
+            self.db[soul][key] = value
+            self.db[soul][METADATA][key] = state
 
 
 

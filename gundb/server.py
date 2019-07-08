@@ -56,7 +56,9 @@ def loggraph(graph):
     # print("TRACKED: ", trackedids, " #", len(trackedids))
     # print("\n\nBACKEND: ", app.backend.list())
 
-
+@app.route("/hello")
+def hello():
+    return "hello"
 
 @sockets.route('/gun')
 def gun(ws):
@@ -84,7 +86,7 @@ def gun(ws):
                         uid = trackid(str(uuid.uuid4()))
                         loggraph(graph)
                         resp = {'@':soul, '#':uid, 'ok':True}
-                        print("DIFF:", diff)
+                        # print("DIFF:", diff)
                         for soul, node in diff.items():
                             for k, v in node.items():
                                 if k == "_":

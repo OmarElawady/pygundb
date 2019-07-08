@@ -1,0 +1,41 @@
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/unset.js"></script>
+    <script>
+      var todos = Gun("ws://172.17.0.2:8000/gun").get('todolistapp')
+      var gun = Gun("ws://172.17.0.2:8000/gun")
+
+      // gun.get("proj.simple://1").put({
+      //   "attr1": "val"
+      // })
+      // gun.get("proj.simple://2").put({
+      //   "attr2": 5
+      // })
+      // gun.get("proj.simple://2").put({
+      //   "attr2": "zc"
+      // }) // should fail.
+      // gun.get("proj.simple://2").get("list/mychars").set("a")
+      // gun.get("proj.simple://2").get("list/mychars").set("b")
+      // gun.get("proj.simple://2").get("list/mychars").set("c")
+
+      // gun.get("proj.person://1").put({
+      //   name: "ahmed"
+      // })
+      gun.get("proj.person://1").put({
+        "name": "ahmed"
+      })
+      gun.get("proj.person://1").get("email").put({
+        "addr": "ahmed@gmail.com",
+      })
+      gun.get("proj.person://2").get("email").put({
+        "addr": "andrew@gmail.com",
+      })
+      gun.get("proj.person://3").get("email").put({
+        "addr": "dmdm@gmail.com",
+      })
+
+      gun.get("proj.person://2").get("email").put({
+        "addr": "notdmdm@gmail.com",
+      })
+      console.log("here now..")
+    </script>

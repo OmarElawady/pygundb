@@ -69,12 +69,12 @@ def HAM(machine_state, incoming_state, current_state, incoming_value, current_va
 
 # applying updates "change" to the graph
 def ham_mix(change, graph):
-    print("==============Starting Ham=========")
-    print("change:")
-    print(json.dumps(change, indent=4, sort_keys=True))
-    print("graph:")
-    print(json.dumps(graph, indent=4, sort_keys=True))
-    print("===============DONE HAM INITIAL STATE     =========")
+    # print("==============Starting Ham=========")
+    # print("change:")
+    # print(json.dumps(change, indent=4, sort_keys=True))
+    # print("graph:")
+    # print(json.dumps(graph, indent=4, sort_keys=True))
+    # print("===============DONE HAM INITIAL STATE     =========")
 
 
     machine = int(time.time()*1000)  # because the value coming from client +new Date() 
@@ -103,12 +103,12 @@ def ham_mix(change, graph):
             graph[soul][METADATA][STATE][key] = state
             diff[soul][METADATA][STATE][key] = state
     
-    print("==============Ham Report=========")
-    print("diff:")
-    print(json.dumps(diff, indent=4, sort_keys=True))
-    print("graph:")
-    print(json.dumps(graph, indent=4, sort_keys=True))
-    print("===============DONE HAM =========")
+    # print("==============Ham Report=========")
+    # print("diff:")
+    # print(json.dumps(diff, indent=4, sort_keys=True))
+    # print("graph:")
+    # print(json.dumps(graph, indent=4, sort_keys=True))
+    # print("===============DONE HAM =========")
     return diff
 
 def lex_from_graph(lex, graph):
